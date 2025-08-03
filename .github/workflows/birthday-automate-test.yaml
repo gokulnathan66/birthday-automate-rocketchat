@@ -14,7 +14,7 @@ jobs:
 
       - name: Find today's birthdays and notify Rocket.Chat
         env:
-          WEBHOOK_URL: ${{ secrets.ROCKETCHAT_WEBHOOK_URL }}
+          ROCKETCHAT_WEBHOOK: ${{ secrets.ROCKETCHAT_WEBHOOK_URL }}
         run: |
           #!/usr/bin/env bash
           set -e
@@ -27,7 +27,15 @@ jobs:
 
           if [[ -n "$MATCHES" ]]; then
             MESSAGE=":tada: Birthday(s) today: $MATCHES"
-            curl -X POST -H 'Content-Type: application/json' -d "{\"text\":\"$MESSAGE\"}" "$WEBHOOK_URL"
+            
+            # Create message.json file
+            cat > message.json << EOF
+          {
+            "text": "$MESSAGE"
+          }
+          EOF
+            
+            curl -X POST -H "Content-Type: application/json" -d @message.json $ROCKETCHAT_WEBHOOK
           else
             echo "No birthdays today."
           fi
