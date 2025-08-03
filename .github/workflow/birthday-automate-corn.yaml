@@ -1,0 +1,33 @@
+name: Birthday Notifier
+
+on:
+  schedule:
+    - cron: '30 0 * * *' # Runs daily at 00:30 UTC
+  workflow_dispatch:
+
+jobs:
+  check-birthdays:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find today's birthdays and notify Rocket.Chat
+        env:
+          WEBHOOK_URL: ${{ secrets.ROCKETCHAT_WEBHOOK_URL }}
+        run: |
+          #!/usr/bin/env bash
+          set -e
+          
+          # Get today's date in MM-DD format (adjust timezone as needed, IST is Asia/Kolkata)
+          TODAY=$(TZ=Asia/Kolkata date +%m-%d)
+
+          # Extract matching lines (excluding header)
+          MATCHES=$(awk -F',' -v today="$TODAY" 'NR>1 && $2==today {print $1}' birthdays.csv)
+
+          if [[ -n "$MATCHES" ]]; then
+            MESSAGE=":tada: Birthday(s) today: $MATCHES"
+            curl -X POST -H 'Content-Type: application/json' -d "{\"text\":\"$MESSAGE\"}" "$WEBHOOK_URL"
+          else
+            echo "No birthdays today."
+          fi
